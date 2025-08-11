@@ -8,7 +8,7 @@ This is a complete static website template for a DevOps and Cloud Engineer looki
 - Professional layout with modern styling
 - All sections needed for a technical portfolio:
   - Hero section with call-to-action buttons
-  - About Me section
+  - About Me section.
   - Technical Skills organized by category
   - Projects showcase with tags
   - Certifications & Training
