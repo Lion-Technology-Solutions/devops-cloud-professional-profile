@@ -1,4 +1,4 @@
-# DevOps & Cloud Engineer Professional Profile
+# DevOps & Cloud Engineer Professional Profile.
 
 This is a complete static website template for a DevOps and Cloud Engineer looking for work. It includes all necessary sections: resume download, contact form, projects showcase, certifications, and job preferences.
 
