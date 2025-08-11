@@ -15,7 +15,7 @@ This is a complete static website template for a DevOps and Cloud Engineer looki
   - Job Preferences
   - Contact Form with multiple contact methods
 - Resume download functionality
-- Profile picture integration.
+- Profile picture integration
 
 ## Implementation Instructions
 
