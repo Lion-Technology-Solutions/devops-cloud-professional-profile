@@ -6,7 +6,7 @@
             "Effect": "Allow",
             "Principal": "*",
             "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::godwin-bucket-devops-cloud/*"  # update bucket name to your
+            "Resource": "arn:aws:s3:::godwin-devops/*"  # update bucket name to your
         }
     ]
 }
