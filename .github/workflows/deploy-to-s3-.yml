@@ -3,15 +3,45 @@ name: Deploy to S3
 on:
   push:
     branches:
-      - master  # or main
+      - master  # Trigger deployment on pushes to master
+  pull_request:
+    branches:
+      - master  # Validate PRs to master
 
 jobs:
-  deploy:
+  validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate HTML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tidy
+          tidy -qe index.html
+
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node (if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies and build
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm run build
+          else
+            echo "No build step needed"
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -22,8 +52,28 @@ jobs:
 
       - name: Sync files to S3
         run: |
+          echo "Listing files in ./dist for verification"
           ls -R ./dist
-          aws s3 sync ./dist s3://godwin-devops \
-            --delete \
-            --acl public-read \
-            --exclude ".github/*"
+          echo "Syncing files to S3 bucket godwin-devops"
+          aws s3 sync ./dist s3://godwin-devops --delete --acl public-read \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "node_modules/*"
+
+      - name: Set S3 bucket policy (optional)
+        run: |
+          if [ -f bucket-policy.json ]; then
+            aws s3api put-bucket-policy \
+              --bucket godwin-devops \
+              --policy file://bucket-policy.json
+          else
+            echo "No bucket policy found, skipping"
+
+      - name: Invalidate CloudFront cache (optional)
+        run: |
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/*"
+          else
+            echo "No CloudFront distribution ID set, skipping invalidation"
