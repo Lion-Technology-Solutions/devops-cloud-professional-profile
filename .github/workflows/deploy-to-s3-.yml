@@ -1,81 +1,29 @@
 name: Deploy to S3
 
 on:
-  pull_request:
-    branches: [ master ]
-    paths:
-      - '**/*'   # Validate all files in PRs
   push:
-    branches: [ master ]
-    paths:
-      - '**/*'   # Deploy on changes to any files
+    branches:
+      - master  # or main
 
 jobs:
-  validate:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Validate HTML
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tidy
-          # Fail PR if HTML has errors
-          tidy -qe index.html
-
   deploy:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install Node (optional, if you have build tools)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies and build
-        run: |
-          if [ -f package.json ]; then
-            npm ci
-            npm run build
-          else
-            echo "No build step needed"
-          fi
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ca-central-1
 
       - name: Sync files to S3
         run: |
-          aws s3 sync ./dist s3://godwin-devops --delete \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude "node_modules/*"
-
-      - name: Set S3 bucket policy (optional)
-        run: |
-          if [ -f bucket-policy.yml ]; then
-            aws s3api put-bucket-policy \
-              --bucket godwin-devops \
-              --policy file://bucket-policy.yml
-          else
-            echo "No bucket policy found, skipping"
-          fi
-
-      - name: Invalidate CloudFront cache (optional)
-        run: |
-          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            aws cloudfront create-invalidation \
-              --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-              --paths "/*"
-          else
-            echo "No CloudFront distribution ID set, skipping invalidation"
-          fi
+          ls -R ./dist
+          aws s3 sync ./dist s3://godwin-devops \
+            --delete \
+            --acl public-read \
+            --exclude ".github/*"
